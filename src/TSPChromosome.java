@@ -1,104 +1,85 @@
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
-import java.util.List;
 
 public class TSPChromosome {
 
-    private final List<TSPGene> chromosome;
+    private final int[] chromosome;
     private final double distance;
 
     public double getDistance() {
         return this.distance;
     }
 
-    private TSPChromosome(final List<TSPGene> chromosome) {
-        this.chromosome = Collections.unmodifiableList(chromosome);
+    private TSPChromosome(final int[] chromosome) {
+        this.chromosome = chromosome;
         this.distance = calculateDistance();
     }
 
-    static TSPChromosome create(final TSPGene[] points) {
-        final List<TSPGene> genes = Arrays.asList(Arrays.copyOf(points, points.length));
-        Collections.shuffle(genes);
+    static TSPChromosome create(final int[] points) {
+        int[] genes = Arrays.copyOf(points, points.length);
+        TSPUtils.shuffleArray(genes);
         return new TSPChromosome(genes);
     }
 
     @Override
     public String toString() {
         final StringBuilder builder = new StringBuilder();
-        for(final TSPGene gene : this.chromosome) {
-            builder.append(gene.toString()).append((" : "));
+        for (final int gene : this.chromosome) {
+            builder.append(TSPUtils.CITIES[gene]).append((" : "));
         }
         return builder.toString();
     }
 
-    List<TSPGene> getChromosome() {
+    int[] getChromosome() {
         return this.chromosome;
     }
 
-    double calculateDistance() {
+    private double calculateDistance() {
         double total = 0.0f;
-        for(int i = 0; i < this.chromosome.size() - 1; i++) {
-            total += this.chromosome.get(i).distance(this.chromosome.get(i+1));
+        for (int i = 0; i < this.chromosome.length - 1; i++) {
+            total += TSPUtils.distanceTable[chromosome[i]][chromosome[i + 1]];
         }
         return total;
     }
 
     TSPChromosome[] crossOver(final TSPChromosome other) {
+        int[] myDNA = Arrays.copyOf(chromosome, TSPUtils.randomIndex(chromosome.length - 1) + 1);
+        int[] firstCrossOver = new int[chromosome.length];
 
-        final List<TSPGene>[] myDNA = TSPUtils.split(this.chromosome);
-        final List<TSPGene>[] otherDNA = TSPUtils.split(other.getChromosome());
+        System.arraycopy(myDNA, 0, firstCrossOver, 0, myDNA.length);
+        cross(other.chromosome, TSPUtils.makeArray(myDNA), firstCrossOver, myDNA.length);
 
-        final List<TSPGene> firstCrossOver = new ArrayList<>(myDNA[0]);
 
-        for(TSPGene gene : otherDNA[0]) {
-            if(!firstCrossOver.contains(gene)) {
-                firstCrossOver.add(gene);
-            }
-        }
+        int[] secondCrossOver = new int[chromosome.length];
+        int[] otherDNA = Arrays.copyOf(other.chromosome, TSPUtils.randomIndex(chromosome.length - 1) + 1);
 
-        for(TSPGene gene : otherDNA[1]) {
-            if(!firstCrossOver.contains(gene)) {
-                firstCrossOver.add(gene);
-            }
-        }
+        System.arraycopy(otherDNA, 0, secondCrossOver, 0, otherDNA.length);
+        cross(chromosome, TSPUtils.makeArray(otherDNA), secondCrossOver, otherDNA.length);
 
-        final List<TSPGene> secondCrossOver = new ArrayList<>(otherDNA[1]);
-
-        for(TSPGene gene : myDNA[0]) {
-            if(!secondCrossOver.contains(gene)) {
-                secondCrossOver.add(gene);
-            }
-        }
-
-        for(TSPGene gene : myDNA[1]) {
-            if(!secondCrossOver.contains(gene)) {
-                secondCrossOver.add(gene);
-            }
-        }
-
-        if(firstCrossOver.size() != TSPUtils.CITIES.length ||
-           secondCrossOver.size() != TSPUtils.CITIES.length) {
-            throw new RuntimeException("oops!");
-        }
-
-        return new TSPChromosome[] {
+        return new TSPChromosome[]{
                 new TSPChromosome(firstCrossOver),
                 new TSPChromosome(secondCrossOver)
         };
     }
 
-    TSPChromosome mutate() {
-        final List<TSPGene> copy = new ArrayList<>(this.chromosome);
-        int indexA = TSPUtils.randomIndex(copy.size());
-        int indexB = TSPUtils.randomIndex(copy.size());
-        while(indexA == indexB) {
-            indexA = TSPUtils.randomIndex(copy.size());
-            indexB = TSPUtils.randomIndex(copy.size());
+    private void cross(int[] otherDNA, boolean[] base, int[] firstCrossOver, int startIdx) {
+        int curIdx = startIdx;
+        for (int gene : otherDNA) {
+            if (!base[gene]) {
+                firstCrossOver[curIdx++] = gene;
+            }
         }
-        Collections.swap(copy, indexA, indexB);
-        return new TSPChromosome(copy);
     }
 
-
+    TSPChromosome mutate() {
+        final int[] copy = Arrays.copyOf(chromosome, chromosome.length);
+        int indexA;
+        int indexB;
+        do {
+            indexA = TSPUtils.randomIndex(copy.length);
+            indexB = TSPUtils.randomIndex(copy.length);
+        } while (indexA == indexB);
+        copy[indexA] = chromosome[indexB];
+        copy[indexB] = chromosome[indexA];
+        return new TSPChromosome(copy);
+    }
 }

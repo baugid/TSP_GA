@@ -1,22 +1,16 @@
-import java.util.Objects;
-
-import static java.lang.Math.pow;
-import static java.lang.Math.sqrt;
-
 public class TSPGene {
 
     private final int x;
     private final int y;
 
-    TSPGene(final int x,
-            final int y) {
+    TSPGene(int x, int y) {
         this.x = x;
         this.y = y;
     }
 
     @Override
     public String toString() {
-        return "(" + this.x + ", " + this.y+ ")";
+        return "(" + this.x + ", " + this.y + ")";
     }
 
     int getX() {
@@ -27,8 +21,10 @@ public class TSPGene {
         return this.y;
     }
 
-    double distance(final TSPGene other) {
-        return sqrt(pow(getX() - other.getX(), 2) + pow(getY() - other.getY(), 2));
+    double distance(TSPGene other) {
+        int dx = getX() - other.getX();
+        int dy = getY() - other.getY();
+        return Math.sqrt(dx * dx + dy * dy);
     }
 
     @Override
@@ -38,10 +34,5 @@ public class TSPGene {
         final TSPGene gene = (TSPGene) o;
         return this.x == gene.x &&
                 this.y == gene.y;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(this.x, this.y);
     }
 }
