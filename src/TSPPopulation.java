@@ -1,15 +1,24 @@
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.List;
 import java.util.PriorityQueue;
+
+import static java.lang.Integer.min;
 
 public class TSPPopulation {
 
-    private ArrayList<TSPChromosome> population;
+    private List<TSPChromosome> population;
     private final int initialSize;
+    private int generationsSinceStable;
+    private boolean permanentlyStable;
 
     TSPPopulation(final int initialSize) {
-        init(initialSize);
+        this.population = init(initialSize);
         this.initialSize = initialSize;
+    }
+
+    boolean isStable() {
+        return population.get(initialSize * 3 / 4).getDistance() == getAlpha().getDistance();
     }
 
     int getPopulationSize() {
@@ -20,24 +29,73 @@ public class TSPPopulation {
         return this.population.get(initialSize - 1);
     }
 
-    private void init(final int initialSize) {
-        population = new ArrayList<>();
+    private List<TSPChromosome> init(final int initialSize) {
+        final List<TSPChromosome> eden = new ArrayList<>();
         for (int i = 0; i < initialSize; i++) {
-            final TSPChromosome chromosome = TSPChromosome.create(TSPUtils.baseArray);
-            population.add(chromosome);
+            final TSPChromosome chromosome = TSPChromosome.create();
+            eden.add(chromosome);
         }
+        return eden;
     }
 
     void update() {
-        doCrossOver();
         doMutation();
+        doReverse();
         doSpawn();
+        doCrossOver();
         doSelection();
+
+        generationsSinceStable++;
+        if (isStable()) {
+            if (generationsSinceStable <= TSPUtils.CITIES.length / 5) {
+                permanentlyStable = true;
+            }
+            generationsSinceStable = 0;
+            fixSociety();
+        }
+    }
+
+    private void doReverse() {
+        final List<TSPChromosome> newPopulation = new ArrayList<>();
+        for (int i = 0; i < this.population.size() / 15; i++) {
+            final TSPChromosome mutation = this.population.get(TSPUtils.randomIndex(this.population.size())).reverse();
+            newPopulation.add(mutation);
+        }
+        this.population.addAll(newPopulation);
+    }
+
+    public void fixSociety() {
+        if (allMutated == 10) {
+            allMutated = 0;
+            replacePopulation();
+        } else {
+            mutatePopulation();
+        }
+    }
+
+    private int allMutated = 0;
+
+    private void mutatePopulation() {
+        for (int i = 0; i < population.size() - 1; i++) {
+            TSPChromosome newChr = population.get(0);
+            int count = min(TSPUtils.randomIndex(allMutated + 1 + i / 100) + 2, TSPUtils.CITIES.length);
+            for (int j = 0; j < count; j++) {
+                newChr = newChr.mutate();
+            }
+            population.set(i, newChr);
+        }
+        allMutated++;
+    }
+
+    private void replacePopulation() {
+        for (int i = population.size() / 10; i < population.size() - 1; i++) {
+            population.set(i, TSPChromosome.create());
+        }
     }
 
     private void doSpawn() {
-        for (int i = 0; i < 1000; i++) {
-            this.population.add(TSPChromosome.create(TSPUtils.baseArray));
+        for (int i = 0; i < initialSize / 9; i++) {
+            this.population.add(TSPChromosome.create());
         }
     }
 
@@ -46,9 +104,10 @@ public class TSPPopulation {
         for (int i = 0; i < initialSize; i++) {
             queue.add(population.get(i));
         }
+
         for (TSPChromosome item : population) {
-            if (queue.peek().getDistance() > item.getDistance()) {
-                queue.remove();
+            if (queue.peek().getDistance() > item.getDistance()) { //doesn't throw, because queue is never empty
+                queue.poll();
                 queue.add(item);
             }
         }
@@ -59,29 +118,45 @@ public class TSPPopulation {
     }
 
     private void doMutation() {
-        int startSize = population.size();
-        for (int i = 0; i < startSize / 10; i++) {
-            final TSPChromosome mutation = this.population.get(TSPUtils.randomIndex(startSize)).mutate();
-            population.add(mutation);
+        final List<TSPChromosome> newPopulation = new ArrayList<>();
+        for (int i = 0; i < this.population.size() / 5; i++) {
+            final TSPChromosome mutation = this.population.get(TSPUtils.randomIndex(this.population.size())).mutate();
+            newPopulation.add(mutation);
         }
+        this.population.addAll(newPopulation);
     }
 
     private void doCrossOver() {
-        int startSize = population.size();
-        population.ensureCapacity(3 * startSize);
-        for (int i = 0; i < startSize; i++) {
-            TSPChromosome partner = getCrossOverPartner(i, startSize);
+        final List<TSPChromosome> newPopulation = new ArrayList<>();
+        for (int i = 0; i < population.size(); i++) {
+            TSPChromosome partner = getCrossOverPartner(i);
             TSPChromosome[] newChromosomes = population.get(i).crossOver(partner);
-            population.add(newChromosomes[0]);
-            population.add(newChromosomes[1]);
+            newPopulation.add(newChromosomes[0]);
+            newPopulation.add(newChromosomes[1]);
+        }
+        this.population.addAll(newPopulation);
+    }
+
+    private TSPChromosome getCrossOverPartner(int chromosome) {
+        int index;
+        do {
+            index = TSPUtils.randomIndex(this.population.size());
+        } while (chromosome == index);
+        return population.get(index);
+    }
+
+    private TSPChromosome getRandomElement() {
+        return population.get(TSPUtils.randomIndex(population.size()));
+    }
+
+    public void mixIn(TSPPopulation other) {
+        permanentlyStable = false;
+        for (int i = 0; i < initialSize / 10; i++) {
+            population.set(TSPUtils.randomIndex(initialSize - 1), other.getRandomElement());
         }
     }
 
-    private TSPChromosome getCrossOverPartner(int chromosome, int size) {
-        int index;
-        do {
-            index = TSPUtils.randomIndex(size);
-        } while (chromosome == index);
-        return population.get(index);
+    public boolean isPermanentlyStable() {
+        return permanentlyStable;
     }
 }

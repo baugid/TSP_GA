@@ -1,5 +1,4 @@
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
@@ -7,7 +6,7 @@ import java.util.stream.IntStream;
 
 public class TSPUtils {
 
-    final static Random R = new Random(10000);
+    static final Random R = new Random(10000);
 
     static final TSPGene[] CITIES = generateData(60);
     static final int[] baseArray = IntStream.range(0, CITIES.length).toArray();
@@ -25,7 +24,6 @@ public class TSPUtils {
     }
 
     private TSPUtils() {
-        throw new RuntimeException("No!");
     }
 
     private static TSPGene[] generateData(final int numDataPoints) {
@@ -37,7 +35,7 @@ public class TSPUtils {
     }
 
     static int randomIndex(final int limit) {
-        return R.nextInt(limit);
+        return ThreadLocalRandom.current().nextInt(limit);
     }
 
     static boolean[] makeArray(int[] genes) {

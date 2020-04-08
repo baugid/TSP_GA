@@ -3,7 +3,7 @@ import java.awt.*;
 
 public class World extends JPanel {
 
-    private final TSPPopulation population;
+    private final TSPMetaPopulation population;
     private int generation = 0;
 
     static final int WIDTH = 800;
@@ -12,7 +12,7 @@ public class World extends JPanel {
     private World() {
         setPreferredSize(new Dimension(WIDTH, HEIGHT));
         setBackground(Color.BLACK);
-        this.population = new TSPPopulation(25000);
+        this.population = new TSPMetaPopulation(10, 2500);
     }
 
     @Override
@@ -21,7 +21,7 @@ public class World extends JPanel {
         final Graphics2D g = (Graphics2D) graphics;
         g.setColor(Color.CYAN);
         g.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON);
-        g.drawString("gen : " + ++this.generation, 350, 15);
+        g.drawString("gen : " + this.generation, 350, 15);
         g.drawString("pop size : " + this.population.getPopulationSize(), 150, 15);
         g.drawString("shortest path : "
                 + String.format("%.2f", population.getAlpha().getDistance()), 500, 15);
@@ -55,20 +55,24 @@ public class World extends JPanel {
             frame.setVisible(true);
         });
         Thread t = new Thread(() -> {
-            while (true) {
+            while (w.evolving()) {
                 w.calc();
             }
+            System.out.println("Fin");
         });
         t.setDaemon(true);
         t.start();
     }
 
+    private boolean evolving() {
+        return population.isUnstable();
+    }
+
     private void calc() {
-        long start = System.nanoTime();
-        for (int i = 0; i < 200; i++) {
-            this.population.update();
-        }
-        System.out.println(System.nanoTime() - start);
+        this.population.update();
+        generation++;
         repaint();
     }
+
+
 }

@@ -14,8 +14,8 @@ public class TSPChromosome {
         this.distance = calculateDistance();
     }
 
-    static TSPChromosome create(final int[] points) {
-        int[] genes = Arrays.copyOf(points, points.length);
+    static TSPChromosome create() {
+        int[] genes = Arrays.copyOf(TSPUtils.baseArray, TSPUtils.baseArray.length);
         TSPUtils.shuffleArray(genes);
         return new TSPChromosome(genes);
     }
@@ -42,12 +42,11 @@ public class TSPChromosome {
     }
 
     TSPChromosome[] crossOver(final TSPChromosome other) {
-        int[] myDNA = Arrays.copyOf(chromosome, TSPUtils.randomIndex(chromosome.length - 1) + 1);
         int[] firstCrossOver = new int[chromosome.length];
+        int[] myDNA = Arrays.copyOf(chromosome, TSPUtils.randomIndex(chromosome.length - 1) + 1);
 
         System.arraycopy(myDNA, 0, firstCrossOver, 0, myDNA.length);
         cross(other.chromosome, TSPUtils.makeArray(myDNA), firstCrossOver, myDNA.length);
-
 
         int[] secondCrossOver = new int[chromosome.length];
         int[] otherDNA = Arrays.copyOf(other.chromosome, TSPUtils.randomIndex(chromosome.length - 1) + 1);
@@ -80,6 +79,18 @@ public class TSPChromosome {
         } while (indexA == indexB);
         copy[indexA] = chromosome[indexB];
         copy[indexB] = chromosome[indexA];
+        return new TSPChromosome(copy);
+    }
+
+
+    public TSPChromosome reverse() {
+        int length = TSPUtils.randomIndex(chromosome.length / 3 - 2) + 2;
+        int startIdx = TSPUtils.randomIndex(chromosome.length - length);
+
+        int[] copy = Arrays.copyOf(chromosome, chromosome.length);
+        for (int i = 0; i < length; i++) {
+            copy[startIdx + i] = chromosome[startIdx + length - i - 1];
+        }
         return new TSPChromosome(copy);
     }
 }

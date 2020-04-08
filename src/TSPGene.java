@@ -26,13 +26,4 @@ public class TSPGene {
         int dy = getY() - other.getY();
         return Math.sqrt(dx * dx + dy * dy);
     }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        final TSPGene gene = (TSPGene) o;
-        return this.x == gene.x &&
-                this.y == gene.y;
-    }
 }
